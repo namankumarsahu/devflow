@@ -1,0 +1,58 @@
+x-backend-env: &backend-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://devflow:${POSTGRES_PASSWORD}@postgres:5432/devflow
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+  PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: devflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: devflow
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devflow"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    command: sh -c "npx prisma db push --skip-generate && node dist/server.js"
+    environment: *backend-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: node dist/worker.js
+    environment: *backend-env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # worker builds & runs user apps via the host daemon
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports: ["80:80"]
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

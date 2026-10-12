@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Environment {
+  DEVELOPMENT
+  STAGING
+  PRODUCTION
+}
+
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  DEPLOYING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(USER)
+  createdAt    DateTime     @default(now())
+  projects     Project[]
+  deployments  Deployment[]
+}
+
+model Project {
+  id                  String       @id @default(uuid())
+  name                String
+  repoUrl             String
+  branch              String       @default("main")
+  environment         Environment  @default(PRODUCTION)
+  containerPort       Int          @default(3000)
+  hostPort            Int          @unique
+  webhookSecret       String
+  currentDeploymentId String?
+  ownerId             String
+  owner               User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  envVars             EnvVar[]
+  deployments         Deployment[]
+  createdAt           DateTime     @default(now())
+
+  @@index([ownerId])
+}
+
+model EnvVar {
+  id        String   @id @default(uuid())
+  key       String
+  valueEnc  String
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, key])
+}
+
+model Deployment {
+  id            String           @id @default(uuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  triggeredById String?
+  triggeredBy   User?            @relation(fields: [triggeredById], references: [id], onDelete: SetNull)
+  status        DeploymentStatus @default(QUEUED)
+  commitHash    String?
+  imageTag      String?
+  url           String?
+  error         String?
+  rollbackOfId  String?
+  rollbackOf    Deployment?      @relation("Rollback", fields: [rollbackOfId], references: [id], onDelete: SetNull)
+  rollbacks     Deployment[]     @relation("Rollback")
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  durationMs    Int?
+  createdAt     DateTime         @default(now())
+  logs          DeploymentLog[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+}
+
+model DeploymentLog {
+  id           Int        @id @default(autoincrement())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  line         String
+  createdAt    DateTime   @default(now())
+
+  @@index([deploymentId, id])
+}
