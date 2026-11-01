@@ -4,7 +4,7 @@
 
 Connect a GitHub repo, deploy with one click, watch the build live over WebSockets, and roll back instantly.
 
-🔗 **Live demo:** [https://3.105.144.208.sslip.io](https://3.105.144.208.sslip.io)
+🔗 **DevFlow Link:** [https://3.105.144.208.sslip.io](https://3.105.144.208.sslip.io)
 
 
 ## Features
