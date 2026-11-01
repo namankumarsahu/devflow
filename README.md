@@ -1,8 +1,11 @@
-# DevFlow — self-hosted deployment platform
+# 🚀 DevFlow
+
+### Self-hosted deployment platform
 
 Connect a GitHub repo, deploy with one click, watch the build live over WebSockets, and roll back instantly.
 
-**Stack:** Node.js · Express 5 · TypeScript · PostgreSQL · Prisma · Redis · BullMQ · React · Tailwind · Docker Compose · GitHub Actions · Jest + Supertest
+🔗 **Live demo:** [https://3.105.144.208.sslip.io](https://3.105.144.208.sslip.io)
+
 
 ## Features
 - JWT auth with `USER` / `ADMIN` roles (first registered account is admin)
